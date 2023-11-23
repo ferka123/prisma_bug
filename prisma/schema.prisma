@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Song {
+  id        Int             @id @default(autoincrement())
+  gid       String?         @unique
+  name      String
+  workId    Int?            @map("work_id")
+  work      Work?           @relation(fields: [workId], references: [id])
+  studioId  Int?            @map("studio_id")
+  studio    Studio?         @relation(fields: [studioId], references: [id])
+  credits   ArtistCredits[]
+  perfTypes PerfType[]
+
+  @@map("songs")
+}
+
+model PerfType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  Song Song[]
+
+  @@map("perf_types")
+}
+
+model Artist {
+  id          Int                 @id @default(autoincrement())
+  gid         String?             @unique
+  name        String
+  workCredits WorkArtistCredits[]
+  songCredits ArtistCredits[]
+
+  @@map("artists")
+}
+
+model CreditType {
+  id          Int                 @id @default(autoincrement())
+  name        String              @unique
+  priority    Int                 @default(0)
+  workCredits WorkArtistCredits[]
+  songCredits ArtistCredits[]
+
+  @@map("credit_type")
+}
+
+model WorkArtistCredits {
+  id       Int        @id @default(autoincrement())
+  artistId Int        @map("artist_id")
+  artist   Artist     @relation(fields: [artistId], references: [id])
+  creditId Int        @map("credit_id")
+  credit   CreditType @relation(fields: [creditId], references: [id])
+  workId   Int        @map("work_id")
+  work     Work       @relation(fields: [workId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([artistId, creditId, workId])
+  @@map("work_artist_credits")
+}
+
+model ArtistCredits {
+  id       Int        @id @default(autoincrement())
+  artistId Int        @map("artist_id")
+  artist   Artist     @relation(fields: [artistId], references: [id])
+  creditId Int        @map("credit_id")
+  credit   CreditType @relation(fields: [creditId], references: [id])
+  songId   Int        @map("song_id")
+  work     Song       @relation(fields: [songId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([artistId, creditId, songId])
+  @@map("song_artist_credits")
+}
+
+model Work {
+  id      Int                 @id @default(autoincrement())
+  name    String
+  mbid    String?             @unique
+  credits WorkArtistCredits[]
+  iswcs   Iswc[]
+  songs   Song[]
+}
+
+model Iswc {
+  id    Int    @id @default(autoincrement())
+  iswc  String @unique
+  works Work[]
+
+  @@map("iswcs")
+}
+
+model Studio {
+  id    Int     @id @default(autoincrement())
+  name  String
+  songs Song[]
+  gid   String? @unique
+
+  @@map("studios")
+}
